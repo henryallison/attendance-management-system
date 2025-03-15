@@ -1702,7 +1702,7 @@ def main():
     st.sidebar.markdown(
         """
         <div class="sidebar-footer">
-            &copy; 2025 All rights reserved. This system was built by <a href="https://github.com/yourusername" target="_blank">Henry Allison</a>.
+            &copy; 2025 All rights reserved. This system was built by <a href="https://mail.google.com/mail/u/0/#inbox" target="_blank">Henry Allison</a>.
         </div>
         """,
         unsafe_allow_html=True
