@@ -16,133 +16,152 @@ import requests
 
 
 
-# Add this to your custom CSS
 st.markdown(
     """
-    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet">
     <style>
+    /* General body styling */
     body {
         font-family: 'Roboto', sans-serif;
-    }
-    </style>
-    """,
-    unsafe_allow_html=True)
-# Custom CSS for modern design
-st.markdown(
-    """
-    <style>
-    /* Main background color */
-    .stApp {
-        background-color: #f0f2f6;
+        margin: 0;
+        padding: 0;
+        background-color: #f5f7fa;
     }
 
-    /* Sidebar background color */
+    /* Streamlit app container */
+    .stApp {
+        background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+        animation: fadeIn 1s ease-in-out;
+    }
+
+    /* Sidebar styling */
     .css-1d391kg {
         background-color: #ffffff;
         border-right: 1px solid #e0e0e0;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        height: 100vh;
     }
 
-    /* Title and header styling */
+    /* Headers */
     h1, h2, h3, h4, h5, h6 {
         color: #2c3e50;
         font-family: 'Arial', sans-serif;
-        text-align:center;
+        text-align: center;
     }
 
-    /* Button styling */
-    .stButton>button {
+    /* Buttons */
+    .stButton > button {
         background-color: #4CAF50;
         color: white;
         border-radius: 5px;
         padding: 10px 20px;
         border: none;
         font-size: 16px;
-        transition: background-color 0.3s ease;
+        transition: background-color 0.3s ease, transform 0.3s ease, box-shadow 0.3s ease;
     }
 
-    .stButton>button:hover {
+    .stButton > button:hover {
         background-color: #45a049;
+        transform: translateY(-2px);
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
     }
 
-    /* Input field styling */
-    .stTextInput>div>div>input, .stSelectbox>div>div>select {
-        border-radius: 5px;
+    .stButton > button:active {
+        animation: pulse 0.3s;
+        color: black !important; /* Force font color to black on click */
+    }
+
+    /* Input fields */
+    .stTextInput > div > div > input, .stSelectbox > div > div > select {
+        border-radius: 10px;
         border: 1px solid #ccc;
         padding: 10px;
         font-size: 16px;
+        transition: box-shadow 0.3s ease, border-color 0.3s ease;
     }
 
-    /* Table styling */
+    .stTextInput > div > div > input:focus, .stSelectbox > div > div > select:focus {
+        box-shadow: 0 0 8px rgba(52, 152, 219, 0.6);
+        border-color: #3498db;
+    }
+
+    /* Tables */
     .stDataFrame {
-        border-radius: 5px;
+        border-radius: 10px;
         box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        background-color: rgba(255, 255, 255, 0.9);
     }
 
-    /* Animation for buttons */
+    /* Animations */
     @keyframes pulse {
         0% { transform: scale(1); }
         50% { transform: scale(1.05); }
         100% { transform: scale(1); }
-    }       
-    /* Add this to your custom CSS */
+    }
+
     @keyframes fadeIn {
-    from { opacity: 0; }
-    to { opacity: 1; }
+        from { opacity: 0; }
+        to { opacity: 1; }
     }
 
-    .stApp {
-    animation: fadeIn 1s ease-in-out;
-    }
-
-    /* Hover effect for buttons */
-    .stButton>button:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
-    }
-    
-    
-    .stButton>button:active {
-        animation: pulse 0.3s;
-    }
-    /* Add this to your custom CSS */
-    .stApp {
-    background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
-    }
-    /* Add this to your custom CSS */
-    .stTextInput>div>div>input, .stSelectbox>div>div>select {
-    border-radius: 10px;
-    border: 1px solid #ccc;
-    padding: 10px;
-    font-size: 16px;
-    transition: box-shadow 0.3s ease;
-    }
-
-    .stTextInput>div>div>input:focus, .stSelectbox>div>div>select:focus {
-    box-shadow: 0 0 8px rgba(52, 152, 219, 0.6);
-    border-color: #3498db;
-    }
+    /* Sidebar footer */
     .sidebar-footer {
-    text-align: center;
-    padding: 10px;
-    font-family: 'Roboto', sans-serif;
-    font-size: 12px;
-    color: #666;
-    border-top: 1px solid #e0e0e0;
-    margin-top: auto;
+        text-align: center;
+        padding: 10px;
+        font-family: 'Roboto', sans-serif;
+        font-size: 12px;
+        color: #666;
+        border-top: 1px solid #e0e0e0;
+        margin-top: auto;
     }
 
     .sidebar-footer a {
-    color: #4CAF50;
-    text-decoration: none;
-    font-weight: bold;
+        color: #4CAF50;
+        text-decoration: none;
+        font-weight: bold;
     }
 
     .sidebar-footer a:hover {
-    text-decoration: underline;
+        text-decoration: underline;
+    }
+
+    /* Responsive design for small screens */
+    @media (max-width: 400px) {
+        h1 { font-size: 7px; }
+        h2 { font-size: 7px; }
+        h3 { font-size: 7px; }
+        h4 { font-size: 5px; }
+        h5 { font-size: 5px; }
+        h6 { font-size: 5px; }
+
+        body, h1, h2, h3, h4, h5, h6, .stTextInput > div > div > input, .stSelectbox > div > div > select {
+            color: black;
+        }
+
+        .stButton > button {
+            padding: 8px 16px;
+            font-size: 14px;
+        }
+
+        .stTextInput > div > div > input, .stSelectbox > div > div > select {
+            padding: 8px;
+            font-size: 14px;
+        }
+
+        .stDataFrame {
+            font-size: 14px;
+        }
+
+        .css-1d391kg {
+            height: auto;
+            min-height: 100vh;
+        }
     }
     </style>
     """,
-    unsafe_allow_html=True)
+    unsafe_allow_html=True
+)
 
 # Database connection details
 DB_CONFIG = {
