@@ -348,6 +348,11 @@ def update_course():
                     # Fetch new lecturer details
                     new_lecturer_name, new_lecturer_email = lecturer_options[selected_lecturer_id]
 
+                    # Clear attendance history if the lecturer is changed
+                    cursor.execute("DELETE FROM Attendance WHERE course_id = %s", (selected_course_id,))
+                    connection.commit()
+                    st.info("Attendance history cleared for the course.")
+
                     # Update the course in the database
                     query = "UPDATE Course SET course_name = %s, lecturer_id = %s, start_date = %s, end_date = %s WHERE course_id = %s"
                     cursor.execute(query, (new_course_name, selected_lecturer_id, new_start_date, new_end_date, selected_course_id))
@@ -369,11 +374,77 @@ def update_course():
                         new_course_name,
                         f"{new_start_date} to {new_end_date}"  # Course duration
                     )
+
+            # Add a Delete Course button
+            if st.button("Delete Course", key="delete_course_button"):
+                # Fetch lecturer details for the course
+                cursor.execute("SELECT lecturer_id FROM Course WHERE course_id = %s", (selected_course_id,))
+                lecturer_id = cursor.fetchone()[0]
+
+                # Fetch lecturer email and name
+                cursor.execute("SELECT name, email FROM Lecturer WHERE lecturer_id = %s", (lecturer_id,))
+                lecturer_details = cursor.fetchone()
+                if lecturer_details:
+                    lecturer_name, lecturer_email = lecturer_details
+
+                    # Send unassignment email to the lecturer
+                    unassignment_email(
+                        lecturer_email,
+                        lecturer_name,
+                        current_course_details[0]  # Course name
+                    )
+
+                # Delete all attendance records for the course
+                cursor.execute("DELETE FROM Attendance WHERE course_id = %s", (selected_course_id,))
+
+                # Delete all enrollments for the course
+                cursor.execute("DELETE FROM Enrollment WHERE course_id = %s", (selected_course_id,))
+
+                # Delete the course
+                cursor.execute("DELETE FROM Course WHERE course_id = %s", (selected_course_id,))
+                connection.commit()
+                st.success("Course deleted successfully!")
+                st.rerun()  # Rerun the app to reflect the changes
         else:
             st.error("Course not found.")
 
         cursor.close()
         connection.close()
+
+
+def unassignment_email(to_email, lecturer_name, course_name):
+    """Send an email to the lecturer notifying them of their unassignment from the course."""
+    sender_email = "hyallison5050@gmail.com"  # Replace with your email
+    sender_password = "najl nxec rten eibs"  # Replace with your app password
+
+    # Create the email
+    msg = MIMEMultipart()
+    msg["From"] = sender_email
+    msg["To"] = to_email
+    msg["Subject"] = "Course Unassignment Notification"
+
+    # Add the message body
+    body = f"""
+    Dear {lecturer_name},
+
+    This is to inform you that you have been unassigned from the course: {course_name}.
+
+    If you have any questions, please contact the admin team.
+
+    Best regards,
+    Admin Team
+    """
+    msg.attach(MIMEText(body, "plain"))
+
+    try:
+        # Send the email using Gmail's SMTP server
+        with smtplib.SMTP("smtp.gmail.com", 587) as server:
+            server.starttls()  # Secure the connection
+            server.login(sender_email, sender_password)
+            server.sendmail(sender_email, to_email, msg.as_string())
+        st.success(f"Unassignment email sent successfully to {to_email}!")
+    except Exception as e:
+        st.error(f"Failed to send email: {e}")
 
 def assignment_email(to_email, lecturer_name, course_name, course_duration):
     """Send an email to the lecturer notifying them of their assignment to the course."""
@@ -1185,9 +1256,21 @@ def astudent_email(to_email, student_name, message):
         st.error(f"Failed to send email: {e}")
 
 def main():
-    st.title("Welcome to INES Ruhengeri students attendance Management System")
-    menu = ["Admin", "Lecturer"]
-    choice = st.sidebar.selectbox("Login As", menu)
+    if "lecturer_logged_in" not in st.session_state:
+        st.session_state.lecturer_logged_in = False
+    if "lecturer_id" not in st.session_state:
+        st.session_state.lecturer_id = None
+    if "lecturer_name" not in st.session_state:
+        st.session_state.lecturer_name = None
+    if "selected_course_id" not in st.session_state:
+        st.session_state.selected_course_id = None
+
+    menu = ["Home", "Admin", "Lecturer", "Find out how the system works?"]
+    choice = st.sidebar.selectbox("Navigation", menu)
+
+    # Show title only on the Home page
+    if choice == "Home":
+        st.title("Welcome to INES Ruhengeri Students Attendance Management System")
 
     if choice == "Admin":
         # Only show the login form if the admin is not logged in
@@ -1357,49 +1440,26 @@ def main():
 
 
 
+
     elif choice == "Lecturer":
 
         st.subheader("Lecturer Panel")
 
-        # Initialize session state variables if they don't exist
-
-        if "lecturer_logged_in" not in st.session_state:
-            st.session_state.lecturer_logged_in = False
-
-        if "lecturer_id" not in st.session_state:
-            st.session_state.lecturer_id = None
-
-        if "lecturer_name" not in st.session_state:
-            st.session_state.lecturer_name = None
-
-        if "selected_course_id" not in st.session_state:
-            st.session_state.selected_course_id = None
-
         if not st.session_state.lecturer_logged_in:
-
-            # Lecturer login form
 
             lecturer_key = st.text_input("Enter Your Login Key")
 
             if st.button("Login"):
 
-                # Enhanced form validation
-
                 if not lecturer_key:
 
                     st.error("Please enter your login key.")
 
-                elif not lecturer_key.isalnum():  # Check if the login key is alphanumeric
+                elif not lecturer_key.isalnum() or len(lecturer_key) != 8:
 
-                    st.error("Login key must be alphanumeric.")
-
-                elif len(lecturer_key) != 8:  # Check if the login key is 8 characters long
-
-                    st.error("Login key must be 8 characters long.")
+                    st.error("Login key must be an 8-character alphanumeric string.")
 
                 else:
-
-                    # Proceed with login logic if the field is filled and valid
 
                     connection = create_connection()
 
@@ -1421,11 +1481,8 @@ def main():
 
                             st.session_state.lecturer_logged_in = True
 
-                            st.success(
-
-                                f"Welcome {st.session_state.lecturer_name} to the INES Ruhengeri Student Management App!"
-
-                            )
+                            st.success(f"login successful!")
+                            st.rerun()  # Rerun the app to reflect the changes
 
                         else:
 
@@ -1630,72 +1687,75 @@ def main():
                             )
 
                             # Toggle for updating or adding attendance
-
                             update_existing = st.checkbox("Update Existing Attendance Record")
 
                             if update_existing:
-
                                 # Fetch attendance records for the selected student
-
                                 cursor.execute("""
-
-                                        SELECT attendance_id, date, status 
-
-                                        FROM Attendance 
-
-                                        WHERE student_id = %s AND course_id = %s
-
-                                    """, (selected_student_id, st.session_state.selected_course_id))
-
+                                    SELECT attendance_id, date, status 
+                                    FROM Attendance 
+                                    WHERE student_id = %s AND course_id = %s
+                                """, (selected_student_id, st.session_state.selected_course_id))
                                 attendance_records = cursor.fetchall()
 
                                 if attendance_records:
-
                                     # Dropdown to select an attendance record to edit
-
                                     selected_attendance_id = st.selectbox(
-
                                         "Select an Attendance Record to Edit",
-
                                         options=[record[0] for record in attendance_records],
-
                                         format_func=lambda
                                             x: f"{next(record[1] for record in attendance_records if record[0] == x)} - {next(record[2] for record in attendance_records if record[0] == x)}"
-
                                     )
 
                                     # Input fields for updating attendance
-
                                     new_status = st.selectbox("New Status", ["Present", "Absent"])
 
                                     if st.button("Update Attendance"):
                                         update_attendance(selected_attendance_id, new_status)
-
+                                        st.rerun()  # Rerun the app to reflect the changes
                                 else:
-
                                     st.warning("No attendance records found for this student.")
-
                             else:
-
                                 # Input fields for adding new attendance
-
                                 attendance_date = st.date_input("Attendance Date", min_value=start_date,
                                                                 max_value=end_date)
-
                                 attendance_status = st.selectbox("Attendance Status", ["Present", "Absent"])
 
                                 if st.button("Mark Attendance"):
-
                                     # Check if all fields are filled
-
                                     if not attendance_date or not attendance_status:
-
                                         st.error("All fields are required. Please fill in all the details.")
-
                                     else:
+                                        # Check if attendance for the selected date already exists
+                                        cursor.execute("""
+                                            SELECT status 
+                                            FROM Attendance 
+                                            WHERE student_id = %s AND course_id = %s AND date = %s
+                                        """, (
+                                        selected_student_id, st.session_state.selected_course_id, attendance_date))
+                                        existing_attendance = cursor.fetchone()
 
-                                        mark_attendance(selected_student_id, st.session_state.selected_course_id,
-                                                        attendance_date, attendance_status)
+                                        if existing_attendance:
+                                            if existing_attendance[0] != "N/A":
+                                                st.error(
+                                                    f"Attendance for {attendance_date} has already been marked as {existing_attendance[0]}.")
+                                            else:
+                                                # Update the existing "N/A" record
+                                                cursor.execute("""
+                                                    UPDATE Attendance 
+                                                    SET status = %s 
+                                                    WHERE student_id = %s AND course_id = %s AND date = %s
+                                                """, (attendance_status, selected_student_id,
+                                                      st.session_state.selected_course_id, attendance_date))
+                                                connection.commit()
+                                                st.success(f"Attendance for {attendance_date} updated successfully!")
+                                                st.rerun()  # Rerun the app to reflect the changes
+                                        else:
+                                            # Add new attendance record
+                                            mark_attendance(selected_student_id, st.session_state.selected_course_id,
+                                                            attendance_date, attendance_status)
+                                            st.success(f"Attendance for {attendance_date} marked successfully!")
+                                            st.rerun()  # Rerun the app to reflect the changes
 
                     else:
 
@@ -1717,7 +1777,141 @@ def main():
                 st.session_state.selected_course_id = None
 
                 st.success("Logged out successfully.")
+                st.rerun()  # Rerun the app to reflect the changes
     # Footer with copyright notice
+    elif choice == "Find out how the system works?":
+        st.title("How the System Works")
+        st.markdown("""
+                ### **System Overview**
+                The **INES Ruhengeri Student Attendance Management System** is a web-based application built using **Streamlit** for the front-end and **MySQL** for the back-end. It is designed to manage student attendance, course enrollment, and exam eligibility for lecturers and administrators at INES Ruhengeri. The system also integrates email notifications to keep students and lecturers informed about course assignments, attendance updates, and enrollment changes.
+
+                ---
+
+                ### **Key Features**
+                1. **Admin Features**:
+                   - **Add/Update Courses**: Admins can add new courses, assign lecturers, and set start/end dates. They can also update or delete existing courses.
+                   - **Add/Update Students**: Admins can add new students and update their details (name, registration number, email).
+                   - **Add/Update Lecturers**: Admins can add new lecturers, generate unique login keys, and update their details.
+                   - **Enroll/Unenroll Students**: Admins can enroll students in courses or unenroll them if necessary.
+                   - **Email Notifications**: Admins can send automated emails to lecturers and students for course assignments, enrollment confirmations, and updates.
+
+                2. **Lecturer Features**:
+                   - **Mark Attendance**: Lecturers can mark attendance for students enrolled in their courses.
+                   - **Update Attendance**: Lecturers can update attendance records for specific dates.
+                   - **Generate Attendance Reports**: Lecturers can view attendance records for all students in their courses and determine exam eligibility based on attendance.
+                   - **Email Notifications**: Lecturers can send attendance reports to students via email.
+
+                3. **General Features**:
+                   - **User Authentication**: Admins and lecturers must log in to access their respective dashboards.
+                   - **Responsive Design**: The system is designed to work on both desktop and mobile devices.
+                   - **Database Integration**: The system uses a MySQL database to store and manage data (courses, students, lecturers, attendance, etc.).
+                   - **Email Integration**: The system uses **SMTP** to send automated emails to users.
+
+                ---
+
+                ### **How the System Works**
+                1. **Admin Workflow**:
+                   - Admins log in using their credentials.
+                   - They can perform actions such as adding/updating courses, students, and lecturers.
+                   - Admins can enroll students in courses and manage enrollments.
+                   - The system sends automated emails to lecturers and students when courses are assigned, updated, or unassigned.
+
+                2. **Lecturer Workflow**:
+                   - Lecturers log in using a unique 8-character alphanumeric login key.
+                   - They can view the courses they are assigned to and mark attendance for students.
+                   - Lecturers can update attendance records and generate attendance reports.
+                   - The system allows lecturers to send attendance reports to students via email.
+
+                3. **Database Operations**:
+                   - The system interacts with a MySQL database to perform CRUD (Create, Read, Update, Delete) operations on courses, students, lecturers, and attendance records.
+                   - Database tables include:
+                     - `Course`: Stores course details (name, lecturer, start/end dates).
+                     - `Student`: Stores student details (name, registration number, email).
+                     - `Lecturer`: Stores lecturer details (name, email, login key).
+                     - `Enrollment`: Manages student enrollments in courses.
+                     - `Attendance`: Tracks student attendance for each course.
+
+                4. **Email Notifications**:
+                   - The system uses **Gmail's SMTP server** to send emails.
+                   - Emails are sent for:
+                     - Course assignments to lecturers.
+                     - Enrollment confirmations to students.
+                     - Attendance updates to students.
+                     - Unassignment notifications to lecturers.
+
+                ---
+
+                ### **How Admin Can Use the System**
+                1. **Login**:
+                   - Admins log in using their username and password.
+                   - Once logged in, they gain access to the admin dashboard.
+
+                2. **Manage Courses**:
+                   - Admins can add new courses, assign lecturers, and set start/end dates.
+                   - They can update or delete existing courses.
+                   - When a course is updated or deleted, the system sends notifications to the affected lecturers.
+
+                3. **Manage Students**:
+                   - Admins can add new students and update their details.
+                   - They can enroll students in courses or unenroll them if necessary.
+                   - When a student is enrolled or unenrolled, the system sends an email notification to the student.
+
+                4. **Manage Lecturers**:
+                   - Admins can add new lecturers and generate unique login keys.
+                   - They can update lecturer details (name, email, login key).
+                   - When a lecturer is added or updated, the system sends an email with their login key.
+
+                5. **View and Manage Enrollments**:
+                   - Admins can view all enrollments and update them if needed.
+                   - They can unenroll students from courses, and the system sends an email notification to the student.
+
+                ---
+
+                ### **How Lecturer Can Use the System**
+                1. **Login**:
+                   - Lecturers log in using their unique 8-character alphanumeric login key.
+                   - Once logged in, they gain access to the lecturer dashboard.
+
+                2. **View Assigned Courses**:
+                   - Lecturers can view the courses they are assigned to.
+                   - They can see the list of students enrolled in each course.
+
+                3. **Mark Attendance**:
+                   - Lecturers can mark attendance for students on specific dates.
+                   - They can update attendance records if needed.
+
+                4. **Generate Attendance Reports**:
+                   - Lecturers can view attendance records for all students in their courses.
+                   - The system calculates whether each student is eligible to sit for the exam based on their attendance (students with fewer than 2 absences are eligible).
+
+                5. **Send Attendance Reports**:
+                   - Lecturers can send attendance reports to students via email.
+                   - The email includes the student's attendance record and their exam eligibility status.
+
+                ---
+
+                ### **Technical Details**
+                1. **Front-End**:
+                   - Built using **Streamlit**, a Python library for creating web applications.
+                   - The UI is styled using custom CSS for a modern and responsive design.
+
+                2. **Back-End**:
+                   - Uses **MySQL** for database management.
+                   - Database operations are performed using **mysql.connector**.
+
+                3. **Email Integration**:
+                   - Uses **smtplib** and **email.mime** libraries to send emails via Gmail's SMTP server.
+
+                4. **Session Management**:
+                   - The system uses **Streamlit's session state** to manage user login states and preferences.
+
+                ---
+
+                ### **Conclusion**
+                The **INES Ruhengeri Student Attendance Management System** is a robust and user-friendly application designed to streamline attendance tracking, course management, and communication between admins, lecturers, and students. Its key features, such as automated email notifications and exam eligibility tracking, make it a valuable tool for educational institutions. The system is scalable and can be extended to include additional features in the future.
+            """)
+
+
     st.sidebar.markdown(
         """
         <div class="sidebar-footer">
