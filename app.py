@@ -13,9 +13,6 @@ import pandas as pd  # Import pandas for efficient table handling
 from streamlit_lottie import st_lottie
 import requests
 
-
-
-
 st.markdown(
     """
     <style>
@@ -182,6 +179,7 @@ def create_connection():
         st.error(f"Error connecting to TiDB: {e}")
         return None
 
+
 # Admin: Add Course
 # Admin: Add Course
 def add_course():
@@ -192,7 +190,8 @@ def add_course():
         # Fetch existing lecturers for the dropdown
         cursor.execute("SELECT lecturer_id, name, email FROM Lecturer")
         lecturers = cursor.fetchall()
-        lecturer_options = {lecturer[0]: (lecturer[1], lecturer[2]) for lecturer in lecturers}  # {lecturer_id: (lecturer_name, lecturer_email)}
+        lecturer_options = {lecturer[0]: (lecturer[1], lecturer[2]) for lecturer in
+                            lecturers}  # {lecturer_id: (lecturer_name, lecturer_email)}
 
         if not lecturer_options:
             st.warning("No lecturers found. Please add a lecturer first.")
@@ -241,6 +240,7 @@ def add_course():
                 cursor.close()
                 connection.close()
 
+
 def lecturer_email_notification(to_email, lecturer_name, course_name, course_duration):
     """Send an email to the lecturer notifying them of the new course."""
     sender_email = "hyallison5050@gmail.com"  # Replace with your email
@@ -276,6 +276,7 @@ def lecturer_email_notification(to_email, lecturer_name, course_name, course_dur
     except Exception as e:
         st.error(f"Failed to send email: {e}")
 
+
 # Admin: Update Course
 def update_course():
     connection = create_connection()
@@ -299,14 +300,16 @@ def update_course():
         )
 
         # Fetch current course details
-        cursor.execute("SELECT course_name, lecturer_id, start_date, end_date FROM Course WHERE course_id = %s", (selected_course_id,))
+        cursor.execute("SELECT course_name, lecturer_id, start_date, end_date FROM Course WHERE course_id = %s",
+                       (selected_course_id,))
         current_course_details = cursor.fetchone()
 
         if current_course_details:
             # Fetch existing lecturers for the dropdown
             cursor.execute("SELECT lecturer_id, name, email FROM Lecturer")
             lecturers = cursor.fetchall()
-            lecturer_options = {lecturer[0]: (lecturer[1], lecturer[2]) for lecturer in lecturers}  # {lecturer_id: (lecturer_name, lecturer_email)}
+            lecturer_options = {lecturer[0]: (lecturer[1], lecturer[2]) for lecturer in
+                                lecturers}  # {lecturer_id: (lecturer_name, lecturer_email)}
 
             if not lecturer_options:
                 st.warning("No lecturers found. Please add a lecturer first.")
@@ -343,7 +346,8 @@ def update_course():
                     st.warning("The course is already assigned to this lecturer. No changes made.")
                 else:
                     # Fetch previous lecturer details
-                    previous_lecturer_name, previous_lecturer_email = lecturer_options.get(current_lecturer_id, ("N/A", "N/A"))
+                    previous_lecturer_name, previous_lecturer_email = lecturer_options.get(current_lecturer_id,
+                                                                                           ("N/A", "N/A"))
 
                     # Fetch new lecturer details
                     new_lecturer_name, new_lecturer_email = lecturer_options[selected_lecturer_id]
@@ -355,7 +359,8 @@ def update_course():
 
                     # Update the course in the database
                     query = "UPDATE Course SET course_name = %s, lecturer_id = %s, start_date = %s, end_date = %s WHERE course_id = %s"
-                    cursor.execute(query, (new_course_name, selected_lecturer_id, new_start_date, new_end_date, selected_course_id))
+                    cursor.execute(query, (
+                    new_course_name, selected_lecturer_id, new_start_date, new_end_date, selected_course_id))
                     connection.commit()
                     st.success("Course updated successfully!")
 
@@ -446,6 +451,7 @@ def unassignment_email(to_email, lecturer_name, course_name):
     except Exception as e:
         st.error(f"Failed to send email: {e}")
 
+
 def assignment_email(to_email, lecturer_name, course_name, course_duration):
     """Send an email to the lecturer notifying them of their assignment to the course."""
     sender_email = "hyallison5050@gmail.com"  # Replace with your email
@@ -481,6 +487,7 @@ def assignment_email(to_email, lecturer_name, course_name, course_duration):
     except Exception as e:
         st.error(f"Failed to send assignment email: {e}")
 
+
 def unassignment_email(to_email, lecturer_name, course_name):
     """Send an email to the lecturer notifying them of their unassignment from the course."""
     sender_email = "hyallison5050@gmail.com"  # Replace with your email
@@ -515,6 +522,7 @@ def unassignment_email(to_email, lecturer_name, course_name):
     except Exception as e:
         st.error(f"Failed to send unassignment email: {e}")
 
+
 # Admin: Add Student
 # Admin: Add Student
 def add_student(name, registration_number, email):
@@ -534,13 +542,15 @@ def add_student(name, registration_number, email):
         except mysql.connector.errors.IntegrityError as e:
             if "email" in str(e.msg).lower():  # Check if the error is related to the email
                 st.error("A student with this email already exists.")
-            elif "registration_number" in str(e.msg).lower():  # Check if the error is related to the registration number
+            elif "registration_number" in str(
+                    e.msg).lower():  # Check if the error is related to the registration number
                 st.error("A student with this registration number already exists.")
             else:
                 st.error(f"An error occurred: {e}")
         finally:
             cursor.close()
             connection.close()
+
 
 # Admin: Update Student
 # Admin: Update Student
@@ -566,7 +576,8 @@ def update_student():
         )
 
         # Fetch current student details
-        cursor.execute("SELECT name, registration_number, email FROM Student WHERE student_id = %s", (selected_student_id,))
+        cursor.execute("SELECT name, registration_number, email FROM Student WHERE student_id = %s",
+                       (selected_student_id,))
         current_student_details = cursor.fetchone()
 
         if current_student_details:
@@ -596,7 +607,8 @@ def update_student():
                 except mysql.connector.errors.IntegrityError as e:
                     if "email" in str(e.msg).lower():  # Check if the error is related to the email
                         st.error("A student with this email already exists.")
-                    elif "registration_number" in str(e.msg).lower():  # Check if the error is related to the registration number
+                    elif "registration_number" in str(
+                            e.msg).lower():  # Check if the error is related to the registration number
                         st.error("A student with this registration number already exists.")
                     else:
                         st.error(f"An error occurred: {e}")
@@ -606,16 +618,19 @@ def update_student():
         cursor.close()
         connection.close()
 
+
 # Function to generate a random login key
 def generate_login_key(length=8):
     """Generate a random alphanumeric login key of the specified length."""
     characters = string.ascii_letters + string.digits  # A-Z, a-z, 0-9
     return ''.join(random.choice(characters) for _ in range(length))
 
+
 def is_valid_email(email):
     """Check if the email is in a valid format."""
     pattern = r"^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$"
     return re.match(pattern, email) is not None
+
 
 def update_email(to_email, lecturer_name, login_key):
     """Send an email to the lecturer with their login key."""
@@ -626,7 +641,7 @@ def update_email(to_email, lecturer_name, login_key):
     Dear {lecturer_name},
 
     Your account has under go some changes.
-    
+
     New Login Key: {login_key}
 
     Best regards,
@@ -649,6 +664,7 @@ def update_email(to_email, lecturer_name, login_key):
         st.success(f"Email sent successfully to {to_email}!")
     except Exception as e:
         st.error(f"Failed to send email: {e}")
+
 
 def students_email(to_email, student_name, message):
     """Send an email to the student with the enrollment details."""
@@ -690,6 +706,10 @@ def send_email(to_email, lecturer_name, login_key):
     You have just been added to the Ines Ruhengeri Student Attendance Management App. Below is your unique login key. Do not lose it.
 
     Login Key: {login_key}
+    This is the link to the app, copy and paste it in any functional web browser inorder to view the system : https://attendance-management-system-beb7.onrender.com/
+    click the how to use option within the navigation bar so that you can learn more about the system
+    Feel free to contact us on +250790878665 if you have any question or concerns.
+    hyallison5050@gmail.com is our current email account. You can also use it as a medium of reaching out too.
 
     Best regards,
     Admin Team
@@ -711,6 +731,7 @@ def send_email(to_email, lecturer_name, login_key):
         st.success(f"Email sent successfully to {to_email}!")
     except Exception as e:
         st.error(f"Failed to send email: {e}")
+
 
 # Admin: Add Lecturer
 def add_lecturer():
@@ -768,6 +789,7 @@ def add_lecturer():
                 cursor.close()
                 connection.close()
 
+
 # Admin: Update Lecturer
 # Admin: Update Lecturer
 def update_lecturer():
@@ -820,13 +842,15 @@ def update_lecturer():
 
                 try:
                     # Check if the new email already exists (excluding the current lecturer)
-                    cursor.execute("SELECT email FROM Lecturer WHERE email = %s AND lecturer_id != %s", (new_email, selected_lecturer_id))
+                    cursor.execute("SELECT email FROM Lecturer WHERE email = %s AND lecturer_id != %s",
+                                   (new_email, selected_lecturer_id))
                     if cursor.fetchone():
                         st.error("A lecturer with this email already exists.")
                         return
 
                     # Check if the new login key already exists (excluding the current lecturer)
-                    cursor.execute("SELECT login_key FROM Lecturer WHERE login_key = %s AND lecturer_id != %s", (new_login_key, selected_lecturer_id))
+                    cursor.execute("SELECT login_key FROM Lecturer WHERE login_key = %s AND lecturer_id != %s",
+                                   (new_login_key, selected_lecturer_id))
                     if cursor.fetchone():
                         st.error("A lecturer with this login key already exists.")
                         return
@@ -871,7 +895,8 @@ def enroll_student():
         # Fetch existing courses for the dropdown
         cursor.execute("SELECT course_id, course_name, start_date, end_date FROM Course")
         courses = cursor.fetchall()
-        course_options = {course[0]: (course[1], course[2], course[3]) for course in courses}  # {course_id: (course_name, start_date, end_date)}
+        course_options = {course[0]: (course[1], course[2], course[3]) for course in
+                          courses}  # {course_id: (course_name, start_date, end_date)}
 
         if not course_options:
             st.warning("No courses found. Please add a course first.")
@@ -894,7 +919,8 @@ def enroll_student():
         if st.button("Enroll Student"):
             try:
                 # Check if the student is already enrolled in the course
-                cursor.execute("SELECT * FROM Enrollment WHERE student_id = %s AND course_id = %s", (selected_student_id, selected_course_id))
+                cursor.execute("SELECT * FROM Enrollment WHERE student_id = %s AND course_id = %s",
+                               (selected_student_id, selected_course_id))
                 if cursor.fetchone():
                     st.error("This student is already enrolled in the selected course.")
                     return
@@ -921,6 +947,7 @@ def enroll_student():
             finally:
                 cursor.close()
                 connection.close()
+
 
 # Admin: Update Enrollment
 def update_enrollment(enrollment_id, student_id, course_id):
@@ -999,6 +1026,8 @@ def ustudent_email(to_email, student_name, message):
         st.success(f"Email sent successfully to {to_email}!")
     except Exception as e:
         st.error(f"Failed to send email: {e}")
+
+
 # Lecturer: Mark Attendance
 def mark_attendance(student_id, course_id, date, status):
     connection = create_connection()
@@ -1011,6 +1040,7 @@ def mark_attendance(student_id, course_id, date, status):
         cursor.close()
         connection.close()
 
+
 def update_attendance(attendance_id, status):
     connection = create_connection()
     if connection:
@@ -1022,6 +1052,7 @@ def update_attendance(attendance_id, status):
         cursor.close()
         connection.close()
 
+
 def lecturer_attendance():
     connection = create_connection()
     if connection:
@@ -1030,7 +1061,8 @@ def lecturer_attendance():
         # Fetch existing courses for the dropdown
         cursor.execute("SELECT course_id, course_name, start_date, end_date FROM Course")
         courses = cursor.fetchall()
-        course_options = {course[0]: (course[1], course[2], course[3]) for course in courses}  # {course_id: (course_name, start_date, end_date)}
+        course_options = {course[0]: (course[1], course[2], course[3]) for course in
+                          courses}  # {course_id: (course_name, start_date, end_date)}
 
         if not course_options:
             st.warning("No courses found. Please add a course first.")
@@ -1086,7 +1118,8 @@ def lecturer_attendance():
         selected_student_id = st.selectbox(
             "Select a Student",
             options=[student[0] for student in enrolled_students],
-            format_func=lambda x: next(student[1] for student in enrolled_students if student[0] == x)  # Display student names in the dropdown
+            format_func=lambda x: next(student[1] for student in enrolled_students if student[0] == x)
+            # Display student names in the dropdown
         )
 
         # Fetch attendance records for the selected student
@@ -1102,7 +1135,8 @@ def lecturer_attendance():
             selected_attendance_id = st.selectbox(
                 "Select an Attendance Record to Edit",
                 options=[record[0] for record in attendance_records],
-                format_func=lambda x: f"{next(record[1] for record in attendance_records if record[0] == x)} - {next(record[2] for record in attendance_records if record[0] == x)}"
+                format_func=lambda
+                    x: f"{next(record[1] for record in attendance_records if record[0] == x)} - {next(record[2] for record in attendance_records if record[0] == x)}"
             )
         else:
             selected_attendance_id = None
@@ -1127,6 +1161,7 @@ def lecturer_attendance():
         cursor.close()
         connection.close()
 
+
 # Lecturer: Generate Exam Eligibility Report
 def generate_report(course_id):
     connection = create_connection()
@@ -1149,6 +1184,7 @@ def generate_report(course_id):
         cursor.close()
         connection.close()
 
+
 # Admin Login
 def admin_login(username, password):
     connection = create_connection()
@@ -1162,6 +1198,7 @@ def admin_login(username, password):
         if result:
             return True
     return False
+
 
 def unenroll_email(to_email, student_name, course_name):
     """Send an email to the student notifying them of unenrollment."""
@@ -1197,6 +1234,7 @@ def unenroll_email(to_email, student_name, course_name):
     except Exception as e:
         st.error(f"Failed to send email: {e}")
 
+
 def unenroll_student(enrollment_id):
     connection = create_connection()
     if connection:
@@ -1231,6 +1269,8 @@ def unenroll_student(enrollment_id):
         finally:
             cursor.close()
             connection.close()
+
+
 def astudent_email(to_email, student_name, message):
     """Send an email to the student with the attendance details."""
     sender_email = "hyallison5050@gmail.com"  # Replace with your email
@@ -1254,6 +1294,7 @@ def astudent_email(to_email, student_name, message):
         st.success(f"Email sent successfully to {to_email}!")
     except Exception as e:
         st.error(f"Failed to send email: {e}")
+
 
 def main():
     if "lecturer_logged_in" not in st.session_state:
@@ -1732,7 +1773,7 @@ def main():
                                             FROM Attendance 
                                             WHERE student_id = %s AND course_id = %s AND date = %s
                                         """, (
-                                        selected_student_id, st.session_state.selected_course_id, attendance_date))
+                                            selected_student_id, st.session_state.selected_course_id, attendance_date))
                                         existing_attendance = cursor.fetchone()
 
                                         if existing_attendance:
@@ -1911,7 +1952,6 @@ def main():
                 The **INES Ruhengeri Student Attendance Management System** is a robust and user-friendly application designed to streamline attendance tracking, course management, and communication between admins, lecturers, and students. Its key features, such as automated email notifications and exam eligibility tracking, make it a valuable tool for educational institutions. The system is scalable and can be extended to include additional features in the future.
             """)
 
-
     st.sidebar.markdown(
         """
         <div class="sidebar-footer">
@@ -1920,6 +1960,7 @@ def main():
         """,
         unsafe_allow_html=True
     )
+
 
 if __name__ == "__main__":
     main()
